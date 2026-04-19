@@ -1,8 +1,5 @@
 package com.nivora.pay.entities;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import org.apache.calcite.model.JsonType;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,20 +16,26 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "saga_instance")
-public class SagaInstance {
+@Table(name = "saga_step")
+public class SagaStep {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "saga_instance_id", nullable = false)
+    private Long sagaInstanceId;
+
+    @Column(name = "step_name", nullable = false)
+    private String stepName;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private SagaStatus status = SagaStatus.STARTED;
+    private SagaStepsStatus status;
 
-    @Type(JsonType.class)
-    @Column(name = "context", columnDefinition = "json")
-    private String context;
+    @Column(name = "error_message", nullable = true)
+    private String errorMessage;
 
-    @Column(name = "current_step", nullable = false)
-    private String currentStep;
+    @Column(name = "step_data", columnDefinition = "json")
+    private String stepData;
+
 }
