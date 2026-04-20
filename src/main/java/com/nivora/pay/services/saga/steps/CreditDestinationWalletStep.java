@@ -18,34 +18,33 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CreditDestinationWalletStep implements SagaStep {
 
-    public final WalletRepository walletRepository;
+    private final WalletRepository walletRepository;
 
     @Override
     @Transactional
     public boolean execute(SagaContext context) {
 
-        // getting destination wallet id from context
         Long toWalletId = context.getLong("toWalletId");
         BigDecimal amount = context.getBigDecimal("amount");
+
         log.info("Crediting destination wallet {} with amount {}", toWalletId, amount);
 
-        // fetching destination wallet from DB
         Wallet wallet = walletRepository.findByIdWithLock(toWalletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
         log.info("Wallet fetched with balance {}", wallet.getBalance());
 
-        // store original balance for compensation
-        context.put("originalToWalletBalance", wallet.getBalance());
+        // Store balance before credit
+        context.put("destinationWalletBalanceBeforeCredit", wallet.getBalance());
 
-        // credit destination wallet
+        // Perform credit
         wallet.credit(amount);
         walletRepository.save(wallet);
 
-        log.info("Wallet saved with balance {}", wallet.getBalance());
+        log.info("Wallet {} credited. New balance {}", toWalletId, wallet.getBalance());
 
-        // store updated balance in context
-        context.put("toWalletBalanceAfterCredit", wallet.getBalance());
+        // Store balance after credit
+        context.put("destinationWalletBalanceAfterCredit", wallet.getBalance());
 
         log.info("Credit destination wallet step executed successfully");
         return true;
@@ -55,28 +54,27 @@ public class CreditDestinationWalletStep implements SagaStep {
     @Transactional
     public boolean compensate(SagaContext context) {
 
-        // getting destination wallet id from context
         Long toWalletId = context.getLong("toWalletId");
         BigDecimal amount = context.getBigDecimal("amount");
-        log.info("Compensating destination wallet {} with amount {}", toWalletId, amount);
 
-        // fetching destination wallet from DB
+        log.info("Compensating (reversing credit) for destination wallet {} with amount {}", toWalletId, amount);
+
         Wallet wallet = walletRepository.findByIdWithLock(toWalletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
         log.info("Wallet fetched with balance {}", wallet.getBalance());
 
-        // store current balance before compensation
-        context.put("originalToWalletBalance", wallet.getBalance());
+        // Store balance before compensation
+        context.put("destinationWalletBalanceBeforeCompensation", wallet.getBalance());
 
-        // reverse credit by debiting amount
+        // Reverse credit (debit)
         wallet.debit(amount);
         walletRepository.save(wallet);
 
-        log.info("Wallet saved with balance {}", wallet.getBalance());
+        log.info("Wallet {} compensated. New balance {}", toWalletId, wallet.getBalance());
 
-        // store updated balance after compensation
-        context.put("toWalletBalanceAfterCreditCompensate", wallet.getBalance());
+        // Store balance after compensation
+        context.put("destinationWalletBalanceAfterCompensation", wallet.getBalance());
 
         log.info("Credit destination wallet compensation executed successfully");
         return true;
@@ -86,5 +84,4 @@ public class CreditDestinationWalletStep implements SagaStep {
     public String getStepName() {
         return "CreditDestinationWalletStep";
     }
-
 }
