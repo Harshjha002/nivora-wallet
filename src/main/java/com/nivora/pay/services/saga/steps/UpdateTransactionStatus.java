@@ -6,7 +6,8 @@ import com.nivora.pay.entities.Transaction;
 import com.nivora.pay.entities.TransactionStatus;
 import com.nivora.pay.repositories.TransactionRepository;
 import com.nivora.pay.services.saga.SagaContext;
-import com.nivora.pay.services.saga.SagaStep;
+import com.nivora.pay.services.saga.SagaStepInterface;
+import com.nivora.pay.services.saga.steps.SagaStepFactory.SagaStepType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UpdateTransactionStatus implements SagaStep {
+public class UpdateTransactionStatus implements SagaStepInterface {
 
     private final TransactionRepository transactionRepository;
 
@@ -65,6 +66,6 @@ public class UpdateTransactionStatus implements SagaStep {
 
     @Override
     public String getStepName() {
-        return "UpdateTransactionStatus";
+        return SagaStepType.UPDATE_TRANSACTION_STATUS_STEP.toString();
     }
 }

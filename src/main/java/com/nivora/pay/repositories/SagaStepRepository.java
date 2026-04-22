@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.nivora.pay.entities.SagaStep;
+import com.nivora.pay.entities.SagaStepsStatus;
 
 public interface SagaStepRepository extends JpaRepository<SagaStep, Long> {
     
@@ -17,4 +18,6 @@ public interface SagaStepRepository extends JpaRepository<SagaStep, Long> {
 
     @Query("SELECT s FROM SagaStep s WHERE s.sagaInstanceId = :sagaInstanceId AND s.status IN ('COMPLETED', 'COMPENSATED')")
     List<SagaStep> findByCompletedOrCompensateedStepsBySagaINstanceId(@Param("sagaInstanceId") Long sagaInstanceId);
+
+    List<SagaStep>  findBySagaInstanceIdAndStatus(Long sagaInstantId , SagaStepsStatus status);
 }
