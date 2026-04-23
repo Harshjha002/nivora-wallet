@@ -28,14 +28,14 @@ public class UpdateTransactionStatus implements SagaStepInterface {
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));
 
-        context.put("originalTransactionStatus", transaction.getStatus());
+        context.put("originalTransactionStatus", transaction.getStatus().name());
 
         transaction.setStatus(TransactionStatus.SUCCESS);
         transactionRepository.save(transaction);
 
         log.info("Transaction status updated for transaction {}", transactionId);
 
-        context.put("transactionStatusAfterUpdate", transaction.getStatus());
+        context.put("transactionStatusAfterUpdate", transaction.getStatus().name());
 
         log.info("Update transaction status step executed successfully");
 
@@ -46,12 +46,11 @@ public class UpdateTransactionStatus implements SagaStepInterface {
     public boolean compensate(SagaContext context) {
 
         Long transactionId = context.getLong("transactionId");
-        log.info("Updating transaction status for transaction {}", transactionId);
+       log.info("Compensating transaction {}", transactionId);
 
         TransactionStatus originalTransactionStatus =
                 TransactionStatus.valueOf(context.getString("originalTransactionStatus"));
 
-        log.info("Compensating transaction {}", transactionId);
 
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));

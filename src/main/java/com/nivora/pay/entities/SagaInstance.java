@@ -1,7 +1,5 @@
 package com.nivora.pay.entities;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import org.apache.calcite.model.JsonType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,10 +29,34 @@ public class SagaInstance {
     @Column(name = "status", nullable = false)
     private SagaStatus status = SagaStatus.STARTED;
 
-    @Type(JsonType.class)
     @Column(name = "context", columnDefinition = "json")
     private String context;
 
     @Column(name = "current_step")
     private String currentStep;
+
+    
+    public void markAsStarted(){
+       this.status =  SagaStatus.STARTED;
+    }
+
+    public void markAsFailed(){
+        this.status = SagaStatus.FAILED;
+    }
+
+    public void markAsCompensated(){
+        this.status = SagaStatus.COMPENSATED;
+    }
+
+    public void markAsRunning(){
+        this.status = SagaStatus.RUNNING;
+    }
+
+    public void markAsCompensating(){
+        this.status = SagaStatus.COMPENSATING;
+    }
+
+    public void markAsCompleted(){
+        this.status = SagaStatus.COMPLETED;
+    }
 }
