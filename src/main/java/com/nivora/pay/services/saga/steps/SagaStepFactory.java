@@ -1,5 +1,6 @@
 package com.nivora.pay.services.saga.steps;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -19,6 +20,14 @@ public class SagaStepFactory {
         CREDIT_DESTINATION_WALLET_STEP,
         UPDATE_TRANSACTION_STATUS_STEP
     }
+
+    
+    public static final List<SagaStepFactory.SagaStepType> TRANSFER_MONEY_SAGA_STEPS = List.of(
+        SagaStepFactory.SagaStepType.DEBIT_SOURCE_WALLET_STEP,
+        SagaStepFactory.SagaStepType.CREDIT_DESTINATION_WALLET_STEP,
+        SagaStepFactory.SagaStepType.UPDATE_TRANSACTION_STATUS_STEP
+);
+
 
     public  SagaStepInterface getSagaStep(String stepName) {
        return sagaStepMap.get(stepName);

@@ -86,4 +86,11 @@ public class TransactionService {
         }
         transactionRepository.deleteById(id);
     }
+
+    public void updateTransactionWithSagaInstanceId(Long transactionId, Long sagaInstanceId) {
+    Transaction transaction = getTransactionById(transactionId);
+    transaction.setSagaInstanceId(sagaInstanceId);
+    transactionRepository.save(transaction);
+    log.info("Transaction updated with saga instance id {}", sagaInstanceId);
+}
 }

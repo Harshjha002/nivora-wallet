@@ -201,6 +201,9 @@ public class SagaOrchestratorImpl implements SagaOrchestrator {
                 .orElseThrow(() -> new RuntimeException("Saga instance not found"));
         sagaInstance.markAsFailed();
         sagaInstanceRepository.save(sagaInstance);
+
+        compensateSaga(sagaInstanceId);
+        log.info("Saga {} failed " , sagaInstanceId);
     }
 
     @Override
