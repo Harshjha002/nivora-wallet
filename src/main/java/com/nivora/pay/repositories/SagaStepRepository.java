@@ -24,7 +24,7 @@ public interface SagaStepRepository extends JpaRepository<SagaStep, Long> {
     );
 
     
-    @Query("SELECT s FROM SagaStep s WHERE s.sagaInstanceId = :sagaInstanceId AND s.status = SagaStepStatus.COMPLETED")
+@Query("SELECT s FROM SagaStep s WHERE s.sagaInstanceId = :sagaInstanceId AND s.status = com.nivora.pay.entities.SagaStepsStatus.COMPLETED")
     List<SagaStep> findCompletedStepsBySagaInstanceId(@Param("sagaInstanceId") Long sagaInstanceId);
 
     List<SagaStep> findBySagaInstanceIdAndStatus(Long sagaInstanceId, SagaStepsStatus status);
