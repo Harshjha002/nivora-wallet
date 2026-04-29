@@ -19,13 +19,18 @@ rules:
     tables:
       user:
         actualDataNodes: shardwallet${1..2}.user
-        databaseStrategy:
-          standard:
-            shardingColumn: id
-            shardingAlgorithmName: db-inline
-        keyGenerateStrategy:
-          column: id
-          keyGeneratorName: snowflake
+
+      wallet:
+        actualDataNodes: shardwallet${1..2}.wallet
+
+      transaction:
+        actualDataNodes: shardwallet${1..2}.transaction
+
+      saga_instance:
+        actualDataNodes: shardwallet${1..2}.saga_instance
+
+      saga_step:
+        actualDataNodes: shardwallet${1..2}.saga_step
 
     shardingAlgorithms:
       db-inline:
