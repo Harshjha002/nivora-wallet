@@ -117,8 +117,7 @@ Transfers money between wallets using Saga orchestration.
 
 ```json
 {
-  "transactionId": 101,
-  "status": "SUCCESS"
+  "sagaInstanceId": 101,
 }
 ```
 
