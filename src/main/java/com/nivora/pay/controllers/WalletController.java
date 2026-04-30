@@ -15,13 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 
@@ -45,7 +43,7 @@ public class WalletController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<Wallet> getMethodName(@PathVariable Long id) {
+    public ResponseEntity<Wallet> getByWalletId(@PathVariable Long id) {
         Wallet wallet = walletService.getWalletById(id);
             return ResponseEntity.ok(wallet);
     }
@@ -56,18 +54,18 @@ public class WalletController {
         return ResponseEntity.ok(balance);
     }
 
-    @PostMapping("/{id}/debit")
-    public ResponseEntity<Wallet> debitWallet(@PathVariable Long id , @RequestBody DebitWalletRequestDTO request) {
-       walletService.debit(id,request.getAmount());
-        Wallet wallet = walletService.getWalletById(id);
+    @PostMapping("/{userid}/debit")
+    public ResponseEntity<Wallet> debitWallet(@PathVariable Long userid , @RequestBody DebitWalletRequestDTO request) {
+       walletService.debit(userid,request.getAmount());
+        Wallet wallet = walletService.getWalletByUserId(userid);
         return ResponseEntity.ok(wallet);
     }
 
 
-    @PostMapping("/{id}/credit")
-    public ResponseEntity<Wallet> creditWallet(@PathVariable Long id , @RequestBody CreditWalletRequestDTO request) {
-        walletService.credit(id,request.getAmount());
-        Wallet wallet = walletService.getWalletById(id);
+    @PostMapping("/{userid}/credit")
+    public ResponseEntity<Wallet> creditWallet(@PathVariable Long userid , @RequestBody CreditWalletRequestDTO request) {
+        walletService.credit(userid,request.getAmount());
+        Wallet wallet = walletService.getWalletByUserId(userid);
         return ResponseEntity.ok(wallet);
     }
 

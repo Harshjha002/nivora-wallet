@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import com.nivora.pay.entities.Wallet;
 import com.nivora.pay.repositories.WalletRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,26 +39,29 @@ public class WalletService {
 
     }
 
-    public List<Wallet> getWalletByUserId(Long userId) {
+    public List<Wallet> getWalletsByUserId(Long userId) {
         return walletRepository.findByUserId(userId);
     }
 
-    @Transactional
-    public void debit(Long walletId, BigDecimal amount) {
-        log.info("Debiting {} from wallet {}", amount, walletId);
-        Wallet wallet = getWalletById(walletId);
-        wallet.debit(amount);
-        walletRepository.save(wallet);
-        log.info("Debit successful for wallet {}", walletId);
+    public Wallet getWalletByUserId(Long userid){
+        log.info("Getting wallet by user id {}",userid);
+        return walletRepository.findByUserId(userid).get(0);
     }
 
     @Transactional
-    public void credit(Long walletId, BigDecimal amount) {
-        log.info("Credited {} to wallet {}", amount, walletId);
-        Wallet wallet = getWalletById(walletId);
-        wallet.credit(amount);
-        walletRepository.save(wallet);
-        log.info("Credit successful for wallet {}", walletId);
+    public void debit(Long userid, BigDecimal amount) {
+        log.info("Debiting {} from wallet {}", amount, userid);
+        Wallet wallet = getWalletByUserId(userid);
+         walletRepository.updateBalanceByUserId(userid, wallet.getBalance().subtract(amount));
+        log.info("Debit successful for wallet {}", wallet.getId());
+    }
+
+    @Transactional
+    public void credit(Long userid, BigDecimal amount) {
+        log.info("Credited {} to wallet {}", amount, userid);
+        Wallet wallet = getWalletByUserId(userid);
+        walletRepository.updateBalanceByUserId(userid, wallet.getBalance().add(amount));
+        log.info("Credit successful for wallet {}", wallet.getId());
     }
 
     public BigDecimal getWalletBalance(long walletId) {
