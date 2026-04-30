@@ -1,0 +1,20 @@
+package com.nivora.pay.dtos;
+
+import java.math.BigDecimal;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TransferRequestDTO {
+    private Long fromWalletId; // fromUserId
+    private Long toWalletId; // toUserId
+    private BigDecimal amount;
+    private String description;
+
+    
+}

@@ -37,15 +37,17 @@ public class CreditDestinationWalletStep implements SagaStepInterface {
 
         // Store balance before credit
         context.put("destinationWalletBalanceBeforeCredit", wallet.getBalance());
+         //store in db
 
         // Perform credit
-        wallet.credit(amount);
-        walletRepository.save(wallet);
+    
+        walletRepository.updateBalanceByUserId(toWalletId, wallet.getBalance().add(amount));
 
         log.info("Wallet {} credited. New balance {}", toWalletId, wallet.getBalance());
 
         // Store balance after credit
         context.put("destinationWalletBalanceAfterCredit", wallet.getBalance());
+        //store in db
 
         log.info("Credit destination wallet step executed successfully");
         return true;
@@ -69,8 +71,9 @@ public class CreditDestinationWalletStep implements SagaStepInterface {
         context.put("destinationWalletBalanceBeforeCompensation", wallet.getBalance());
 
         // Reverse credit (debit)
-        wallet.debit(amount);
-        walletRepository.save(wallet);
+        walletRepository.updateBalanceByUserId(toWalletId, wallet.getBalance().subtract(amount));
+
+        
 
         log.info("Wallet {} compensated. New balance {}", toWalletId, wallet.getBalance());
 

@@ -38,8 +38,7 @@ public class DebitSourceWalletStep implements SagaStepInterface {
         context.put("sourceWalletBalanceBeforeDebit", wallet.getBalance());
 
         // Perform debit
-        wallet.debit(amount);
-        walletRepository.save(wallet);
+       walletRepository.updateBalanceByUserId(fromWalletId, wallet.getBalance().subtract(amount));
 
         log.info("Wallet {} debited. New balance {}", fromWalletId, wallet.getBalance());
 
@@ -67,8 +66,8 @@ public class DebitSourceWalletStep implements SagaStepInterface {
         context.put("sourceWalletBalanceBeforeCompensation", wallet.getBalance());
 
         // Reverse debit (credit back)
-        wallet.credit(amount);
-        walletRepository.save(wallet);
+        walletRepository.updateBalanceByUserId(fromWalletId, wallet.getBalance().add(amount));
+
 
         log.info("Wallet {} compensated. New balance {}", fromWalletId, wallet.getBalance());
 

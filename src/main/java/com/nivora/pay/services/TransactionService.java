@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.nivora.pay.entities.Transaction;
 import com.nivora.pay.entities.TransactionStatus;
+import com.nivora.pay.entities.TransactionType;
 import com.nivora.pay.repositories.TransactionRepository;
 
 import jakarta.transaction.Transactional;
@@ -33,6 +34,8 @@ public class TransactionService {
                 .fromWalletId(fromWalletId)
                 .toWalletId(toWalletId)
                 .amount(amount)
+                .status(TransactionStatus.PENDING)
+                .type(TransactionType.TRANSFER)
                 .description(description)
                 .build();
 
