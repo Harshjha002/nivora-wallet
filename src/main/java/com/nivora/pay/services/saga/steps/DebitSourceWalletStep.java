@@ -24,57 +24,60 @@ public class DebitSourceWalletStep implements SagaStepInterface {
     @Override
     @Transactional
     public boolean execute(SagaContext context) {
+
         Long fromWalletId = context.getLong("fromWalletId");
         BigDecimal amount = context.getBigDecimal("amount");
 
         log.info("Debiting source wallet {} with amount {}", fromWalletId, amount);
 
-        Wallet wallet = walletRepository.findByIdWithLock(fromWalletId)
+        Wallet wallet = walletRepository.findByUserIdWithLock(fromWalletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
-        log.info("Wallet fetched with balance {}", wallet.getBalance());
+        if (!wallet.hasSufficientBalance(amount)) {
+            log.error("Insufficient balance for wallet {}", fromWalletId);
+            return false;
+        }
 
-        // Store balance before debit
+        // before state
         context.put("sourceWalletBalanceBeforeDebit", wallet.getBalance());
 
-        // Perform debit
-       walletRepository.updateBalanceByUserId(fromWalletId, wallet.getBalance().subtract(amount));
+        BigDecimal newBalance = wallet.getBalance().subtract(amount);
 
+        walletRepository.updateBalanceByUserId(
+                wallet.getUserId(),
+                newBalance);
         log.info("Wallet {} debited. New balance {}", fromWalletId, wallet.getBalance());
 
-        // Store balance after debit
+        // after state
         context.put("sourceWalletBalanceAfterDebit", wallet.getBalance());
 
-        log.info("Debit source wallet step executed successfully");
         return true;
     }
 
     @Override
     @Transactional
     public boolean compensate(SagaContext context) {
+
         Long fromWalletId = context.getLong("fromWalletId");
         BigDecimal amount = context.getBigDecimal("amount");
 
-        log.info("Compensating (reversing debit) for source wallet {} with amount {}", fromWalletId, amount);
+        log.info("Compensating debit for wallet {} with amount {}", fromWalletId, amount);
 
-        Wallet wallet = walletRepository.findByIdWithLock(fromWalletId)
+        Wallet wallet = walletRepository.findByUserIdWithLock(fromWalletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
-        log.info("Wallet fetched with balance {}", wallet.getBalance());
-
-        // Store balance before compensation
         context.put("sourceWalletBalanceBeforeCompensation", wallet.getBalance());
 
-        // Reverse debit (credit back)
-        walletRepository.updateBalanceByUserId(fromWalletId, wallet.getBalance().add(amount));
+        BigDecimal newBalance = wallet.getBalance().add(amount);
 
+        walletRepository.updateBalanceByUserId(
+                wallet.getUserId(),
+                newBalance);
 
         log.info("Wallet {} compensated. New balance {}", fromWalletId, wallet.getBalance());
 
-        // Store balance after compensation
         context.put("sourceWalletBalanceAfterCompensation", wallet.getBalance());
 
-        log.info("Compensation for source wallet step executed successfully");
         return true;
     }
 

@@ -8,8 +8,6 @@ import org.springframework.stereotype.Service;
 import com.nivora.pay.entities.Transaction;
 import com.nivora.pay.services.saga.SagaContext;
 import com.nivora.pay.services.saga.SagaOrchestrator;
-import com.nivora.pay.services.saga.steps.SagaStepFactory;
-import com.nivora.pay.services.saga.steps.SagaStepFactory.SagaStepType;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,53 +20,65 @@ public class TransferSagaService {
 
     private final TransactionService transactionService;
     private final SagaOrchestrator sagaOrchestrator;
+    private final TransferSagaAsyncService asyncService;
 
     @Transactional
-    public Long initiateTransfer(Long fromWalletId, Long toWalletId, BigDecimal amount, String description) {
+    public Long initiateTransfer(Long fromWalletId,
+            Long toWalletId,
+            BigDecimal amount,
+            String description,
+            String idempotencyKey) {
 
-        log.info("Initiating transfer from wallet {}, to wallet {}, with amount {}, and description {}",
-                fromWalletId, toWalletId, amount, description);
+        // Validate idempotency key to prevent duplicate processing
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Idempotency key is required");
+        }
 
-        Transaction transaction = transactionService.createTransaction(fromWalletId, toWalletId, amount, description);
+        // Validate transfer amount
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
 
-        // creating saga context
+        // Create or fetch existing transaction (idempotent)
+        Transaction transaction = transactionService.createTransaction(
+                fromWalletId,
+                toWalletId,
+                amount,
+                description,
+                idempotencyKey);
+
+        // If saga already exists → return existing (avoid duplicate execution)
+        if (transaction.getSagaInstanceId() != null) {
+            log.info("Duplicate request for key {} → returning saga {}",
+                    idempotencyKey, transaction.getSagaInstanceId());
+            return transaction.getSagaInstanceId();
+        }
+
+        // Start new saga for transaction processing
+        log.info("Starting saga for transaction {} with key {}",
+                transaction.getId(), idempotencyKey);
+
+        // Build saga context (shared data across steps)
         SagaContext sagaContext = SagaContext.builder()
-                .data(Map.ofEntries(
-                        Map.entry("transactionId", transaction.getId()),
-                        Map.entry("fromWalletId", fromWalletId),
-                        Map.entry("toWalletId", toWalletId),
-                        Map.entry("amount", amount),
-                        Map.entry("description", description)))
+                .data(Map.of(
+                        "transactionId", transaction.getId(),
+                        "fromWalletId", fromWalletId,
+                        "toWalletId", toWalletId,
+                        "amount", amount,
+                        "description", description))
                 .build();
 
+        // Initialize saga instance
         Long sagaInstanceId = sagaOrchestrator.startSaga(sagaContext);
-        log.info("Saga instance started with id {}", sagaInstanceId);
 
-        transactionService.updateTransactionWithSagaInstanceId(transaction.getId(), sagaInstanceId);
+        // Link transaction with saga instance
+        transactionService.updateTransactionWithSagaInstanceId(
+                transaction.getId(),
+                sagaInstanceId);
 
-        executeTransferSaga(sagaInstanceId);
+        // Execute saga asynchronously
+        asyncService.executeTransferSaga(sagaInstanceId);
 
         return sagaInstanceId;
-    }
-
-    public void executeTransferSaga(Long sagaInstanceId) {
-
-        log.info("Executing transfer saga with id {}", sagaInstanceId);
-
-        try {
-            for (SagaStepType step : SagaStepFactory.TRANSFER_MONEY_SAGA_STEPS) {
-                boolean success = sagaOrchestrator.executeStep(sagaInstanceId, step.toString());
-                if (!success) {
-                    log.error("Failed to execute step {}", step.toString());
-                    sagaOrchestrator.failSaga(sagaInstanceId);
-                    return;
-                }
-            }
-            sagaOrchestrator.completeSaga(sagaInstanceId);
-            log.info("Transfer saga completed with id {}", sagaInstanceId);
-        } catch (Exception e) {
-            log.error("Failed to execute transfer saga with id {}", sagaInstanceId, e);
-            sagaOrchestrator.failSaga(sagaInstanceId);
-        }
     }
 }

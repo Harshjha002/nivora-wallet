@@ -16,6 +16,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Transaction {
 
+    @Column(unique = true)
+    private String idempotencyKey;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -1,6 +1,7 @@
 package com.nivora.pay.repositories;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +25,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findByStatus(TransactionStatus status);
 
     List<Transaction> findBySagaInstanceId(Long sagaInstanceId);
+
+    Optional<Transaction> findByIdempotencyKey(String key);
 }

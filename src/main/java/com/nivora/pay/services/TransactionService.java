@@ -2,7 +2,9 @@ package com.nivora.pay.services;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.nivora.pay.entities.Transaction;
@@ -22,13 +24,50 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
 
     @Transactional
-    public Transaction createTransaction(Long fromWalletId,
+    public Transaction createTransaction(
+            Long fromWalletId,
             Long toWalletId,
             BigDecimal amount,
-            String description) {
+            String description,
+            String idempotencyKey
 
-        log.info("Creating transaction from {} to {} of amount {}",
-                fromWalletId, toWalletId, amount);
+    ) {
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalArgumentException("Idempotency key is required");
+        }
+
+        Optional<Transaction> existing = transactionRepository.findByIdempotencyKey(idempotencyKey);
+
+        if (existing.isPresent()) {
+
+            Transaction tx = existing.get();
+
+            log.info("Idempotent hit for key {} with status {}", idempotencyKey, tx.getStatus());
+
+            // already processed → safe
+            if (tx.getStatus() == TransactionStatus.SUCCESS) {
+                return tx;
+            }
+
+            // still processing → return but DO NOT re-run saga
+            if (tx.getStatus() == TransactionStatus.PENDING) {
+                return tx;
+            }
+
+            // failed → still return same result (strict idempotency)
+            if (tx.getStatus() == TransactionStatus.FAILED) {
+                return tx;
+            }
+
+            return tx;
+        }
+        log.info("Creating transaction from wallet {} to {} amount {} with key {}",
+                fromWalletId, toWalletId, amount, idempotencyKey);
 
         Transaction transaction = Transaction.builder()
                 .fromWalletId(fromWalletId)
@@ -37,17 +76,21 @@ public class TransactionService {
                 .status(TransactionStatus.PENDING)
                 .type(TransactionType.TRANSFER)
                 .description(description)
+                .idempotencyKey(idempotencyKey)
                 .build();
 
-        Transaction savedTransaction = transactionRepository.save(transaction);
-        log.info("Transaction created with id: {}", savedTransaction.getId());
-
-        return savedTransaction;
+        try {
+            return transactionRepository.save(transaction);
+        } catch (DataIntegrityViolationException e) {
+            return transactionRepository.findByIdempotencyKey(idempotencyKey)
+                    .orElseThrow(() -> e);
+        }
 
     }
 
     // Get single transaction
     public Transaction getTransactionById(Long id) {
+
         return transactionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction id not found: " + id));
     }
@@ -91,9 +134,9 @@ public class TransactionService {
     }
 
     public void updateTransactionWithSagaInstanceId(Long transactionId, Long sagaInstanceId) {
-    Transaction transaction = getTransactionById(transactionId);
-    transaction.setSagaInstanceId(sagaInstanceId);
-    transactionRepository.save(transaction);
-    log.info("Transaction updated with saga instance id {}", sagaInstanceId);
-}
+        Transaction transaction = getTransactionById(transactionId);
+        transaction.setSagaInstanceId(sagaInstanceId);
+        transactionRepository.save(transaction);
+        log.info("Transaction updated with saga instance id {}", sagaInstanceId);
+    }
 }

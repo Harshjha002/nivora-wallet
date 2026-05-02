@@ -1,3 +1,5 @@
+
+
 package com.nivora.pay.services.saga.steps;
 
 import java.util.List;
@@ -10,9 +12,11 @@ import com.nivora.pay.services.saga.SagaStepInterface;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SagaStepFactory {
 
     private final List<SagaStepInterface> steps;
@@ -43,7 +47,7 @@ public class SagaStepFactory {
     }
 
     public SagaStepInterface getSagaStep(String stepName) {
-        System.out.println("REQUESTED STEP: " + stepName);
+        log.info("REQUESTED STEP: {}" , stepName);
         return stepMap.get(stepName);
     }
 }

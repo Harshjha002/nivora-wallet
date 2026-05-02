@@ -30,26 +30,23 @@ public class CreditDestinationWalletStep implements SagaStepInterface {
 
         log.info("Crediting destination wallet {} with amount {}", toWalletId, amount);
 
-        Wallet wallet = walletRepository.findByIdWithLock(toWalletId)
+        Wallet wallet = walletRepository.findByUserIdWithLock(toWalletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
-        log.info("Wallet fetched with balance {}", wallet.getBalance());
-
-        // Store balance before credit
+        // before state
         context.put("destinationWalletBalanceBeforeCredit", wallet.getBalance());
-         //store in db
 
-        // Perform credit
-    
-        walletRepository.updateBalanceByUserId(toWalletId, wallet.getBalance().add(amount));
+        BigDecimal newBalance = wallet.getBalance().add(amount);
+
+        walletRepository.updateBalanceByUserId(
+                wallet.getUserId(),
+                newBalance);
 
         log.info("Wallet {} credited. New balance {}", toWalletId, wallet.getBalance());
 
-        // Store balance after credit
+        // after state
         context.put("destinationWalletBalanceAfterCredit", wallet.getBalance());
-        //store in db
 
-        log.info("Credit destination wallet step executed successfully");
         return true;
     }
 
@@ -60,27 +57,23 @@ public class CreditDestinationWalletStep implements SagaStepInterface {
         Long toWalletId = context.getLong("toWalletId");
         BigDecimal amount = context.getBigDecimal("amount");
 
-        log.info("Compensating (reversing credit) for destination wallet {} with amount {}", toWalletId, amount);
+        log.info("Compensating credit for wallet {} with amount {}", toWalletId, amount);
 
-        Wallet wallet = walletRepository.findByIdWithLock(toWalletId)
+        Wallet wallet = walletRepository.findByUserIdWithLock(toWalletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found"));
 
-        log.info("Wallet fetched with balance {}", wallet.getBalance());
-
-        // Store balance before compensation
         context.put("destinationWalletBalanceBeforeCompensation", wallet.getBalance());
 
-        // Reverse credit (debit)
-        walletRepository.updateBalanceByUserId(toWalletId, wallet.getBalance().subtract(amount));
+        BigDecimal newBalance = wallet.getBalance().subtract(amount);
 
-        
+        walletRepository.updateBalanceByUserId(
+                wallet.getUserId(),
+                newBalance);
 
         log.info("Wallet {} compensated. New balance {}", toWalletId, wallet.getBalance());
 
-        // Store balance after compensation
         context.put("destinationWalletBalanceAfterCompensation", wallet.getBalance());
 
-        log.info("Credit destination wallet compensation executed successfully");
         return true;
     }
 

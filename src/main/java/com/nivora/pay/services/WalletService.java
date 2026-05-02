@@ -33,7 +33,7 @@ public class WalletService {
         return wallet;
     }
 
-    public Wallet getWalletById(Long walletId){
+    public Wallet getWalletById(Long walletId) {
         return walletRepository.findById(walletId)
                 .orElseThrow(() -> new RuntimeException("Wallet not found with id: " + walletId));
 
@@ -43,25 +43,35 @@ public class WalletService {
         return walletRepository.findByUserId(userId);
     }
 
-    public Wallet getWalletByUserId(Long userid){
-        log.info("Getting wallet by user id {}",userid);
+    public Wallet getWalletByUserId(Long userid) {
+        log.info("Getting wallet by user id {}", userid);
         return walletRepository.findByUserId(userid).get(0);
     }
 
     @Transactional
-    public void debit(Long userid, BigDecimal amount) {
-        log.info("Debiting {} from wallet {}", amount, userid);
-        Wallet wallet = getWalletByUserId(userid);
-         walletRepository.updateBalanceByUserId(userid, wallet.getBalance().subtract(amount));
-        log.info("Debit successful for wallet {}", wallet.getId());
+    public void debit(Long userId, BigDecimal amount) {
+
+        Wallet wallet = walletRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+
+        if (!wallet.hasSufficientBalance(amount)) {
+            throw new RuntimeException("Insufficient balance");
+        }
+
+        BigDecimal newBalance = wallet.getBalance().subtract(amount);
+
+        walletRepository.updateBalanceByUserId(userId, newBalance);
     }
 
     @Transactional
-    public void credit(Long userid, BigDecimal amount) {
-        log.info("Credited {} to wallet {}", amount, userid);
-        Wallet wallet = getWalletByUserId(userid);
-        walletRepository.updateBalanceByUserId(userid, wallet.getBalance().add(amount));
-        log.info("Credit successful for wallet {}", wallet.getId());
+    public void credit(Long userId, BigDecimal amount) {
+
+        Wallet wallet = walletRepository.findByUserIdWithLock(userId)
+                .orElseThrow(() -> new RuntimeException("Wallet not found"));
+
+        BigDecimal newBalance = wallet.getBalance().add(amount);
+
+        walletRepository.updateBalanceByUserId(userId, newBalance);
     }
 
     public BigDecimal getWalletBalance(long walletId) {
