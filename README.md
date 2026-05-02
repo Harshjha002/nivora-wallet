@@ -1,194 +1,102 @@
-# 💳 Nivora Pay — Distributed Wallet System
+# 🚀 Nivora Wallet – Fault-Tolerant Transaction System
 
-A **scalable backend wallet service** built with Spring Boot that supports **wallet-based transactions**, powered by **Saga orchestration** and **database sharding (ShardingSphere)**.
-
----
-
-## 🚀 What This Project Does
-
-Nivora Pay enables:
-
-* Wallet creation and management
-* Credit and debit operations
-* Wallet-to-wallet money transfer
-* Distributed transaction handling using Saga pattern
-* Scalable data handling using database sharding
+A backend system designed to handle **safe and reliable wallet transfers** with strong guarantees against duplicate transactions, failures, and concurrency issues.
 
 ---
 
-## 🧠 Core Architecture
+## 🧠 Problem Statement
 
-### 🔹 Saga-Based Transaction Flow
+In real-world payment systems, retries and network failures can lead to:
 
-Each transaction is executed as a **Saga**, ensuring consistency across multiple steps:
+- ❌ Duplicate transactions  
+- ❌ Double debit issues  
+- ❌ Inconsistent state (money debited but not credited)  
 
-1. **Start transaction**
-2. **Debit source wallet**
-3. **Credit destination wallet**
-4. **Update transaction status**
-5. **On failure → Compensation (rollback executed)**
+This project solves these problems by ensuring:
 
----
-
-### 🔹 Key Components
-
-* **WalletService** → balance operations (credit, debit, validation)
-* **TransactionService** → transaction creation and management
-* **TransferSagaService** → initiates saga flow
-* **SagaOrchestrator** → manages execution & compensation
-* **Saga Steps**
-
-  * `DebitSourceWalletStep`
-  * `CreditDestinationWalletStep`
-  * `UpdateTransactionStatus`
+👉 **Exactly-once transaction execution**
 
 ---
 
-## 🏗️ Tech Stack
+## ⚙️ Key Features
 
-* **Java 17**
-* **Spring Boot**
-* **Spring Data JPA**
-* **MySQL**
-* **Apache ShardingSphere**
-* **Gradle**
+- ✅ **Idempotent Transactions**  
+  Prevents duplicate processing using idempotency keys.
 
----
+- 🔁 **Saga Pattern Implementation**  
+  Ensures consistency across multi-step transactions (debit → credit → status update).
 
-## 📂 Project Structure
+- ⚡ **Asynchronous Processing**  
+  Non-blocking transaction execution using async workflows.
 
-```
-controllers/        → REST APIs
-services/           → business logic
-services/saga/      → saga orchestration
-repositories/       → data access layer
-entities/           → database models
-dtos/               → request/response objects
-config/             → application + saga config
-```
+- 🔒 **Concurrency Control**  
+  Prevents race conditions using database-level locking.
+
+- 💥 **Failure Handling**  
+  Maintains system consistency even when steps fail.
+
+- 📦 **Database Sharding (Basic)**  
+  Distributes wallet data across partitions for scalability.
 
 ---
 
-## 📡 API Endpoints
-
-### 🔹 Wallet APIs
-
-* `POST /api/v1/wallet/{userId}` → Create wallet
-* `POST /api/v1/wallet/{userId}/credit` → Credit wallet
-* `POST /api/v1/wallet/{userId}/debit` → Debit wallet
+## 🏗️ System Flow
 
 ---
 
-### 🔹 Transaction API
+## 🔄 Idempotency Handling
 
-**Base URL**
-
-```
-http://localhost:8081/api/v1/transactions
-```
+- Each request includes an **idempotency key**
+- Duplicate requests return the same transaction
+- Prevents multiple executions of the same transfer
 
 ---
 
-### ➤ Send Money
+## 🧩 Saga Workflow
 
-```
-POST /api/v1/transactions
-```
+| Step | Description |
+|------|------------|
+| Debit | Deduct amount from sender wallet |
+| Credit | Add amount to receiver wallet |
+| Update | Mark transaction as SUCCESS |
 
-**Description**
-Transfers money between wallets using Saga orchestration.
-
----
-
-### 🧾 Request
-
-```json
-{
-  "fromWalletId": 1256613059640688640,
-  "toWalletId": 1256612945660477440,
-  "amount": 50,
-  "description": "Payment for lunch"
-}
-```
+If any step fails:
+- System marks transaction as **FAILED**
+- Prevents inconsistent state
 
 ---
 
-### ✅ Response
+## 🗄️ Tech Stack
 
-```json
-{
-  "sagaInstanceId": 101,
-}
-```
-
----
-
-## ⚙️ Configuration
-
-### application.properties
-
-* Server configuration
-* Database connection
-* JPA settings
-
-### sharding.yml
-
-* Sharding rules
-* Data source configuration
-* Wallet/user-based routing
+- Java  
+- Spring Boot  
+- Spring Data JPA (Hibernate)  
+- MySQL  
+- Lombok  
+- ShardingSphere (for database sharding)
 
 ---
 
-## ▶️ Run Locally
+## 📊 Why This Project Matters
 
-```bash
-git clone https://github.com/your-username/nivora-pay.git
-cd nivora-pay
-./gradlew bootRun
-```
+This project goes beyond basic CRUD and demonstrates:
 
----
-
-## 🔥 Key Highlights
-
-* Implements **Saga pattern for distributed transactions**
-* Handles **failure using compensation logic**
-* Uses **database sharding for scalability**
-* Designed with **modular and extensible architecture**
+- Exactly-once transaction execution using idempotency  
+- Distributed transaction management using Saga pattern  
+- Concurrency control and race condition handling  
+- Fault-tolerant backend system design  
 
 ---
 
-## ⚠️ Failure Handling
+## 🚀 Future Improvements
 
-* Insufficient balance → transaction fails
-* Saga rollback triggers compensation steps
-* Ensures **data consistency across operations**
-
----
-
-## 🔮 Future Improvements
-
-* Idempotency for safe retries
-* Retry mechanism for failed saga steps
-* Event-driven architecture (Kafka/RabbitMQ)
-* Authentication & authorization
-* Monitoring and logging
+- Retry mechanism for failed transactions  
+- JWT-based authentication  
+- Monitoring and metrics (observability)  
+- Message queue integration (Kafka/RabbitMQ)  
 
 ---
 
-## 👤 Author
+## 👨‍💻 Author
 
-**Harsh Jha**
-Backend Developer — focused on scalable systems
-
----
-
-## ⭐ Why This Project Matters
-
-This project goes beyond CRUD and demonstrates:
-
-* Distributed transaction design
-* Fault-tolerant systems
-* Scalable backend architecture
-
----
+Harsh Jha  
