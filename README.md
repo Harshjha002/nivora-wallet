@@ -18,6 +18,15 @@ This project solves these problems by ensuring:
 
 ---
 
+## Design Decisions
+
+| Decision | Why |
+|----------|-----|
+| Saga over 2PC | Avoids distributed lock overhead; tolerates partial failures |
+| Pessimistic locking (SELECT FOR UPDATE) | Guarantees zero race conditions on balance updates |
+| ShardingSphere horizontal sharding | Distributes wallet data by user_id hash across N shards |
+| Idempotency keys | Exactly-once guarantee even on client retries |
+
 ## ⚙️ Key Features
 
 - ✅ **Idempotent Transactions**  
